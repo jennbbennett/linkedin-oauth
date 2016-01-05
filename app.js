@@ -4,6 +4,26 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
+var passport = require('passport');
+require('dotenv').load();
+
+
+passport.use(new LinkedInStrategy({
+    clientID: process.env.LINKEDIN_CLIENT_ID,
+    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/auth/linkedin/callback",
+    scope: ['r_emailaddress', 'r_basicprofile'],
+  },
+  function(accessToken, refreshToken, profile, done) {
+    done(null, {
+      id: profile.id,
+      displayName: profile.displayName,
+      token: accessToken
+    });
+  }
+));
+
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -18,12 +38,38 @@ app.set('view engine', 'hbs');
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({
+  extended: false
+}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(passport.initialize());
+
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function(user, done) {
+  done(null, user);
+});
 
 app.use('/', routes);
 app.use('/users', users);
+
+app.get('/auth/linkedin',
+  passport.authenticate('linkedin', {
+    state: 'SOME STATE'
+  }),
+  function(req, res) {
+    // The request will be redirected to LinkedIn for authentication, so this
+    // function will not be called.
+  });
+
+app.get('/auth/linkedin/callback', passport.authenticate('linkedin', {
+  successRedirect: '/',
+  failureRedirect: '/login'
+}));
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
