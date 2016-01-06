@@ -2,9 +2,20 @@
 <html>
   <head>
     <title>{{title}}</title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel="stylesheet" href="/stylesheets/style.css" />
   </head>
   <body>
     {{{body}}}
+    {{#if user}}
+      <p>
+        Hello {{user.displayName}}
+        |
+        <a href="/logout">Logout</a>
+      </p>
+    {{else}}
+      <p>
+        <a href="/auth/linkedin">Login</a>
+      </p>
+    {{/if}}
   </body>
 </html>

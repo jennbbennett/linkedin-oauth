@@ -6,6 +6,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
 var passport = require('passport');
+var cookieSession = require('cookie-session');
 require('dotenv').load();
 
 
@@ -44,6 +45,15 @@ app.use(bodyParser.urlencoded({
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(passport.initialize());
+
+app.use(cookieSession({
+  name: 'session',
+  keys: [
+    process.env.SESSION_KEY1,
+    process.env.SESSION_KEY2,
+    process.env.SESSION_KEY3
+  ]
+}));
 
 passport.serializeUser(function(user, done) {
   done(null, user);
