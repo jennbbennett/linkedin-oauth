@@ -9,27 +9,9 @@ var passport = require('passport');
 var cookieSession = require('cookie-session');
 require('dotenv').load();
 
-
-passport.use(new LinkedInStrategy({
-    clientID: process.env.LINKEDIN_CLIENT_ID,
-    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: process.env.HOST + "/auth/linkedin/callback",
-    scope: ['r_emailaddress', 'r_basicprofile'],
-  },
-  function(accessToken, refreshToken, profile, done) {
-    done(null, {
-      id: profile.id,
-      displayName: profile.displayName,
-      token: accessToken
-    });
-  }
-));
-
-
-var routes = require('./routes/index');
-var users = require('./routes/users');
-
 var app = express();
+
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -44,7 +26,6 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(passport.initialize());
 
 app.use(cookieSession({
   name: 'session',
@@ -55,22 +36,65 @@ app.use(cookieSession({
   ]
 }));
 
+app.use(passport.initialize());
+app.use(passport.session());
+
+
 passport.serializeUser(function(user, done) {
   done(null, user);
 });
 
-passport.deserializeUser(function(user, done) {
-  done(null, user);
+passport.deserializeUser(function(obj, done) {
+  done(null, obj);
 });
+
+
+passport.use(new LinkedInStrategy({
+  clientID: process.env.LINKEDIN_CLIENT_ID,
+  clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+  callbackURL: process.env.HOST + "/auth/linkedin/callback",
+  scope: ['r_emailaddress', 'r_basicprofile'],
+  state: true
+}, function(accessToken, refreshToken, profile, done) {
+  var newProfile = {id: profile.id, displayName: profile.displayName};
+  done(null,newProfile );
+}));
+
+// passport.use(new LinkedInStrategy({
+//     clientID: process.env.LINKEDIN_CLIENT_ID,
+//     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+//     callbackURL: process.env.HOST + "/auth/linkedin/callback",
+//     scope: ['r_emailaddress', 'r_basicprofile'],
+//     state: true
+//   },
+//   function(accessToken, refreshToken, profile, done) {
+//     done(null, {
+//       id: profile.id,
+//       displayName: profile.displayName,
+//     });
+//   }
+// ));
+
+
+var routes = require('./routes/index');
+var users = require('./routes/users');
+
+
+
+app.use(function (req, res, next) {
+  res.locals.user = req.user;
+  next();
+});
+
 
 app.use('/', routes);
 app.use('/users', users);
 
 app.get('/auth/linkedin',
-  passport.authenticate('linkedin', {
-    state: 'SOME STATE'
-  }),
+  passport.authenticate('linkedin'),
   function(req, res) {
+    console.log("base authenticate");
+    console.log(req.user);
     // The request will be redirected to LinkedIn for authentication, so this
     // function will not be called.
   });
@@ -80,6 +104,10 @@ app.get('/auth/linkedin/callback', passport.authenticate('linkedin', {
   failureRedirect: '/login'
 }));
 
+app.get('/logout', function(req, res){
+  req.logout();
+  res.redirect('/');
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
