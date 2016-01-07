@@ -56,8 +56,9 @@ passport.use(new LinkedInStrategy({
   scope: ['r_emailaddress', 'r_basicprofile'],
   state: true
 }, function(accessToken, refreshToken, profile, done) {
-  var newProfile = {id: profile.id, displayName: profile.displayName};
+  var newProfile = {id: profile.id, displayName: profile.displayName, token: accessToken};
   done(null,newProfile );
+  console.log('In LinkedInStrategy');
 }));
 
 // passport.use(new LinkedInStrategy({
